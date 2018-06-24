@@ -140,6 +140,7 @@ def train_conv_net(datasets,
                 x: train_set_x[index * batch_size: (index + 1) * batch_size],
                  y: train_set_y[index * batch_size: (index + 1) * batch_size]},
                                  allow_input_downcast=True)
+    
     train_model = theano.function([index], cost, updates=grad_updates,
           givens={
             x: train_set_x[index*batch_size:(index+1)*batch_size],
@@ -182,26 +183,23 @@ def train_conv_net(datasets,
         if val_perf >= best_val_perf:
             best_val_perf = val_perf
             test_loss = test_model_all(test_set_x,test_set_y)
-            test_perf = 1- test_loss
+            test_perf = 1 - test_loss
+
     return test_perf
 
 def shared_dataset(data_xy, borrow=True):
-        """ Function that loads the dataset into shared variables
+    """ Function that loads the dataset into shared variables
 
-        The reason we store our dataset in shared variables is to allow
-        Theano to copy it into the GPU memory (when code is run on GPU).
-        Since copying data into the GPU is slow, copying a minibatch everytime
-        is needed (the default behaviour if the data is not in a shared
-        variable) would lead to a large decrease in performance.
-        """
-        data_x, data_y = data_xy
-        shared_x = theano.shared(np.asarray(data_x,
-                                               dtype=theano.config.floatX),
-                                 borrow=borrow)
-        shared_y = theano.shared(np.asarray(data_y,
-                                               dtype=theano.config.floatX),
-                                 borrow=borrow)
-        return shared_x, T.cast(shared_y, 'int32')
+    The reason we store our dataset in shared variables is to allow
+    Theano to copy it into the GPU memory (when code is run on GPU).
+    Since copying data into the GPU is slow, copying a minibatch everytime
+    is needed (the default behaviour if the data is not in a shared
+    variable) would lead to a large decrease in performance.
+    """
+    data_x, data_y = data_xy
+    shared_x = theano.shared(np.asarray(data_x, dtype=theano.config.floatX), borrow=borrow)
+    shared_y = theano.shared(np.asarray(data_y, dtype=theano.config.floatX), borrow=borrow)
+    return shared_x, T.cast(shared_y, 'int32')
 
 def sgd_updates_adadelta(params,cost,rho=0.95,epsilon=1e-6,norm_lim=9,word_vec_name='Words'):
     """
@@ -295,10 +293,11 @@ def make_idx_data_split(train_revs, dev_revs, test_revs, word_idx_map, max_l, k=
         sent.append(rev["y"])
         train.append(sent)
 
-    for rev in dev_revs:
-        sent = get_idx_from_sent(rev["text"], word_idx_map, max_l, k, filter_h)
-        sent.append(rev["y"])
-        dev.append(sent)
+    if len(dev_revs)>0:
+        for rev in dev_revs:
+            sent = get_idx_from_sent(rev["text"], word_idx_map, max_l, k, filter_h)
+            sent.append(rev["y"])
+            dev.append(sent)
 
     for rev in test_revs:
         sent = get_idx_from_sent(rev["text"], word_idx_map, max_l, k, filter_h)
@@ -309,19 +308,28 @@ def make_idx_data_split(train_revs, dev_revs, test_revs, word_idx_map, max_l, k=
     test = np.array(test,dtype="int")
     dev = np.array(dev,dtype="int")
 
+    if len(dev_revs)==0:
+        return [train, test]
     return [train, test, dev]
 
 if __name__=="__main__":
+
+    dataset = 'TREC'
     dataset_split="split"
 
     print("loading data...")
 
     if dataset_split == "cv":
         x = cPickle.load(open("mr.p","rb"),encoding='latin1')
-        revs, W, W2, word_idx_map, vocab, max_l = x[0], x[1], x[2], x[3], x[4], x[5]
+        revs, W, W2, word_idx_map, vocab, max_l, num_classes = x[0], x[1], x[2], x[3], x[4], x[5], x[6]
     else:
-        x = cPickle.load(open("mr_split.p","rb"),encoding='latin1')
-        train_revs, dev_revs, test_revs, W, W2, word_idx_map, vocab, max_l = x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7]
+        if dataset=='TREC':
+            x = cPickle.load(open("mr_split.p","rb"),encoding='latin1')
+            train_revs, test_revs, W, W2, word_idx_map, vocab, max_l, num_classes = x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7]
+            dev_revs=[]
+        else:
+            x = cPickle.load(open("mr_split.p","rb"),encoding='latin1')
+            train_revs, dev_revs, test_revs, W, W2, word_idx_map, vocab, max_l, num_classes = x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8]
 
     print("data loaded!")
     mode = sys.argv[1]
@@ -351,7 +359,7 @@ if __name__=="__main__":
                                   lr_decay=0.95,
                                   filter_hs=[3,4,5],
                                   conv_non_linear="relu",
-                                  hidden_units=[100,2],
+                                  hidden_units=[100,num_classes],
                                   shuffle_batch=True,
                                   n_epochs=25,
                                   sqr_norm_lim=9,
@@ -369,7 +377,7 @@ if __name__=="__main__":
                                   lr_decay=0.95,
                                   filter_hs=[3,4,5],
                                   conv_non_linear="relu",
-                                  hidden_units=[100,2],
+                                  hidden_units=[100,num_classes],
                                   shuffle_batch=True,
                                   n_epochs=25,
                                   sqr_norm_lim=9,

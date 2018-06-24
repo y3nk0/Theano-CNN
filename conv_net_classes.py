@@ -247,19 +247,19 @@ class LogisticRegression(object):
     def __init__(self, input, n_in, n_out, W=None, b=None):
         """ Initialize the parameters of the logistic regression
 
-    :type input: theano.tensor.TensorType
-    :param input: symbolic variable that describes the input of the
-    architecture (one minibatch)
+        :type input: theano.tensor.TensorType
+        :param input: symbolic variable that describes the input of the
+        architecture (one minibatch)
 
-    :type n_in: int
-    :param n_in: number of input units, the dimension of the space in
-    which the datapoints lie
+        :type n_in: int
+        :param n_in: number of input units, the dimension of the space in
+        which the datapoints lie
 
-    :type n_out: int
-    :param n_out: number of output units, the dimension of the space in
-    which the labels lie
+        :type n_out: int
+        :param n_out: number of output units, the dimension of the space in
+        which the labels lie
 
-    """
+        """
 
         # initialize with 0 the weights W as a matrix of shape (n_in, n_out)
         if W is None:
@@ -291,19 +291,19 @@ class LogisticRegression(object):
         """Return the mean of the negative log-likelihood of the prediction
         of this model under a given target distribution.
 
-    .. math::
+        .. math::
 
-    \frac{1}{|\mathcal{D}|} \mathcal{L} (\theta=\{W,b\}, \mathcal{D}) =
-    \frac{1}{|\mathcal{D}|} \sum_{i=0}^{|\mathcal{D}|} \log(P(Y=y^{(i)}|x^{(i)}, W,b)) \\
-    \ell (\theta=\{W,b\}, \mathcal{D})
+        \frac{1}{|\mathcal{D}|} \mathcal{L} (\theta=\{W,b\}, \mathcal{D}) =
+        \frac{1}{|\mathcal{D}|} \sum_{i=0}^{|\mathcal{D}|} \log(P(Y=y^{(i)}|x^{(i)}, W,b)) \\
+        \ell (\theta=\{W,b\}, \mathcal{D})
 
-    :type y: theano.tensor.TensorType
-    :param y: corresponds to a vector that gives for each example the
-    correct label
+        :type y: theano.tensor.TensorType
+        :param y: corresponds to a vector that gives for each example the
+        correct label
 
-    Note: we use the mean instead of the sum so that
-    the learning rate is less dependent on the batch size
-    """
+        Note: we use the mean instead of the sum so that
+        the learning rate is less dependent on the batch size
+        """
         # y.shape[0] is (symbolically) the number of rows in y, i.e.,
         # number of examples (call it n) in the minibatch
         # T.arange(y.shape[0]) is a symbolic vector which will contain
@@ -318,12 +318,12 @@ class LogisticRegression(object):
 
     def errors(self, y):
         """Return a float representing the number of errors in the minibatch ;
-    zero one loss over the size of the minibatch
+        zero one loss over the size of the minibatch
 
-    :type y: theano.tensor.TensorType
-    :param y: corresponds to a vector that gives for each example the
-    correct label
-    """
+        :type y: theano.tensor.TensorType
+        :param y: corresponds to a vector that gives for each example the
+        correct label
+        """
 
         # check if y has same dimension of y_pred
         if y.ndim != self.y_pred.ndim:

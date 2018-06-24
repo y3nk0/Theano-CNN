@@ -9,6 +9,7 @@ def build_data_cv(data_file, cv=10, clean_string=True):
     Loads data and split into 10 folds.
     """
     revs = []
+    y_data = []
 
     vocab = defaultdict(float)
     with open(data_file, "r",encoding='latin1') as f:
@@ -22,21 +23,23 @@ def build_data_cv(data_file, cv=10, clean_string=True):
             words = set(orig_rev.split())
             for word in words:
                 vocab[word] += 1
+
+            y_data.append(int(line[0]))
+
             datum  = {"y":int(line[0]),
                       "text": orig_rev,
                       "num_words": len(orig_rev.split()),
                       "split": np.random.randint(0,cv)}
             revs.append(datum)
 
-    return revs, vocab
+    num_classes = len(set(y_data))
+
+    return revs, vocab, num_classes
 
 def build_data_split(data_folder, clean_string=True):
     """
     Loads data for pre-split datasets.
     """
-    revs = []
-    # pos_file = data_folder[0]
-    # neg_file = data_folder[1]
 
     train_file = data_folder[0]
     test_file = data_folder[1]
@@ -46,14 +49,18 @@ def build_data_split(data_folder, clean_string=True):
     test_revs = []
     dev_revs = []
 
+    y_data = []
+
     vocab = defaultdict(float)
-    with open(train_file, "r") as f:
+    with open(train_file, "r", encoding='latin1') as f:
         for line in f:
             rev = []
             rev.append(line[2:].strip())
             if clean_string:
                 if "stsa" in train_file:
                     orig_rev = clean_str_sst(" ".join(rev))
+                elif "TREC" in train_file:
+                    orig_rev = clean_str(" ".join(rev),True)
                 else:
                     orig_rev = clean_str(" ".join(rev))
             else:
@@ -61,48 +68,63 @@ def build_data_split(data_folder, clean_string=True):
             words = set(orig_rev.split())
             for word in words:
                 vocab[word] += 1
+
+            y_data.append(int(line[0]))
+
             datum = {"y":int(line[0]),
                       "text": orig_rev,
                       "num_words": len(orig_rev.split())}
             train_revs.append(datum)
 
-    with open(dev_file, "r") as f:
-        for line in f:
-            rev = []
-            rev.append(line[2:].strip())
-            if clean_string:
-                if "stsa" in dev_file:
-                    orig_rev = clean_str_sst(" ".join(rev))
+    if "TREC" not in dev_file:
+        with open(dev_file, "r", encoding='latin1') as f:
+            for line in f:
+                rev = []
+                rev.append(line[2:].strip())
+                if clean_string:
+                    if "stsa" in dev_file:
+                        orig_rev = clean_str_sst(" ".join(rev))
+                    else:
+                        orig_rev = clean_str(" ".join(rev))
                 else:
-                    orig_rev = clean_str(" ".join(rev))
-            else:
-                orig_rev = " ".join(rev).lower()
-            words = set(orig_rev.split())
-            for word in words:
-                vocab[word] += 1
-            datum = {"y":int(line[0]),
-                      "text": orig_rev,
-                      "num_words": len(orig_rev.split())}
-            dev_revs.append(datum)
+                    orig_rev = " ".join(rev).lower()
+                words = set(orig_rev.split())
+                for word in words:
+                    vocab[word] += 1
 
-    with open(test_file, "r") as f:
+                y_data.append(int(line[0]))
+
+                datum = {"y":int(line[0]),
+                          "text": orig_rev,
+                          "num_words": len(orig_rev.split())}
+                dev_revs.append(datum)
+
+    with open(test_file, "r", encoding='latin1') as f:
         for line in f:
             rev = []
             rev.append(line[2:].strip())
             if clean_string:
                 if "stsa" in test_file:
                     orig_rev = clean_str_sst(" ".join(rev))
+                elif "TREC" in test_file:
+                    orig_rev = clean_str(" ".join(rev),True)
                 else:
                     orig_rev = clean_str(" ".join(rev))
             else:
                 orig_rev = " ".join(rev).lower()
+
+            y_data.append(int(line[0]))
 
             datum = {"y":int(line[0]),
                       "text": orig_rev,
                       "num_words": len(orig_rev.split())}
             test_revs.append(datum)
 
-    return train_revs, test_revs, dev_revs, vocab
+    num_classes = len(set(y_data))
+
+    if len(dev_revs)>0:
+        return train_revs, test_revs, dev_revs, vocab, num_classes
+    return train_revs, test_revs, vocab, num_classes
 
 def get_W(word_vecs, k=300):
     """
@@ -181,8 +203,8 @@ if __name__=="__main__":
     #dataset = "../data/subj.all"
 
     # dataset = "../data/stsa.binary"
-    dataset = "../data/stsa.fine"
-    #dataset = "../data/TREC.fine"
+    # dataset = "../data/stsa.fine"
+    dataset = "../data/TREC"
 
     dataset_split = "split"
 
@@ -190,12 +212,16 @@ if __name__=="__main__":
 
     print("loading data...")
     if dataset_split=="cv":
-        revs, vocab = build_data_cv(dataset, cv=10, clean_string=True)
+        revs, vocab, num_classes = build_data_cv(dataset, cv=10, clean_string=True)
         max_l = np.max(pd.DataFrame(revs)["num_words"])
         print("number of sentences: " + str(len(revs)))
     else:
         data_folder = [dataset+".train",dataset+".test",dataset+".dev"]
-        train_revs, test_revs, dev_revs, vocab = build_data_split(data_folder, clean_string=True)
+        if 'TREC' in dataset:
+            train_revs, test_revs, vocab, num_classes = build_data_split(data_folder, clean_string=True)
+        else:
+            train_revs, test_revs, dev_revs, vocab, num_classes = build_data_split(data_folder, clean_string=True)
+
         max_l = np.max(pd.DataFrame(train_revs)["num_words"])
 
     print("data loaded!")
@@ -213,8 +239,11 @@ if __name__=="__main__":
     W2, _ = get_W(rand_vecs)
 
     if dataset_split=="cv":
-        cPickle.dump([revs, W, W2, word_idx_map, vocab, max_l], open("mr.p", "wb"))
+        cPickle.dump([revs, W, W2, word_idx_map, vocab, max_l, num_classes], open("mr.p", "wb"))
     else:
-        cPickle.dump([train_revs, dev_revs, test_revs, W, W2, word_idx_map, vocab, max_l], open("mr_split.p", "wb"))
+        if 'TREC' in dataset:
+            cPickle.dump([train_revs, test_revs, W, W2, word_idx_map, vocab, max_l, num_classes], open("mr_split.p", "wb"))
+        else:
+            cPickle.dump([train_revs, dev_revs, test_revs, W, W2, word_idx_map, vocab, max_l, num_classes], open("mr_split.p", "wb"))
 
     print("dataset created!")
