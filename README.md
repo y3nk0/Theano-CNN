@@ -2,7 +2,7 @@
 Code for reproducing all results for all datasets by the paper [Convolutional Neural Networks for Sentence Classification](http://arxiv.org/abs/1408.5882) (EMNLP 2014).
 
 ### Requirements
-Code is written in Python (3.5) and requires Theano (1.0.2).
+Code is written in Python (3.5) and requires Theano (1.0.2). We provide all datasets, and the implementation supports multi-class, as well as cross validation and pre-split datasets.
 
 Using the pre-trained `word2vec` vectors will also require downloading the binary file from
 https://code.google.com/p/word2vec/
