@@ -7,7 +7,6 @@ import re
 import warnings
 import sys
 import time
-from theano.tensor.signal.pool import pool_2d
 warnings.filterwarnings("ignore")
 
 #different non-linearities
@@ -140,7 +139,7 @@ def train_conv_net(datasets,
                 x: train_set_x[index * batch_size: (index + 1) * batch_size],
                  y: train_set_y[index * batch_size: (index + 1) * batch_size]},
                                  allow_input_downcast=True)
-    
+
     train_model = theano.function([index], cost, updates=grad_updates,
           givens={
             x: train_set_x[index*batch_size:(index+1)*batch_size],
@@ -330,7 +329,7 @@ if __name__=="__main__":
         else:
             x = cPickle.load(open("mr_split.p","rb"),encoding='latin1')
             train_revs, dev_revs, test_revs, W, W2, word_idx_map, vocab, max_l, num_classes = x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8]
-
+    print(max_l)
     print("data loaded!")
     mode = sys.argv[1]
     word_vectors = sys.argv[2]

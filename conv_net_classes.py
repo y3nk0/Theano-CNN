@@ -13,7 +13,8 @@ import numpy
 import theano.tensor.shared_randomstreams
 import theano
 import theano.tensor as T
-from theano.tensor.signal import downsample
+# from theano.tensor.signal import downsample
+from theano.tensor.signal.pool import pool_2d
 from theano.tensor.nnet import conv
 
 def ReLU(x):
@@ -93,7 +94,7 @@ class MLPDropout(object):
         #rectified_linear_activation = lambda x: T.maximum(0.0, x)
 
         # Set up all the hidden layers
-        self.weight_matrix_sizes = zip(layer_sizes, layer_sizes[1:])
+        self.weight_matrix_sizes = list(zip(layer_sizes, layer_sizes[1:]))
         self.layers = []
         self.dropout_layers = []
         self.activations = activations
@@ -390,12 +391,12 @@ class LeNetConvPoolLayer(object):
         conv_out = conv.conv2d(input=input, filters=self.W,filter_shape=self.filter_shape, image_shape=self.image_shape)
         if self.non_linear=="tanh":
             conv_out_tanh = T.tanh(conv_out + self.b.dimshuffle('x', 0, 'x', 'x'))
-            self.output = downsample.max_pool_2d(input=conv_out_tanh, ds=self.poolsize, ignore_border=True)
+            self.output = pool_2d(input=conv_out_tanh, ds=self.poolsize, ignore_border=True)
         elif self.non_linear=="relu":
             conv_out_tanh = ReLU(conv_out + self.b.dimshuffle('x', 0, 'x', 'x'))
-            self.output = downsample.max_pool_2d(input=conv_out_tanh, ds=self.poolsize, ignore_border=True)
+            self.output = pool_2d(input=conv_out_tanh, ds=self.poolsize, ignore_border=True)
         else:
-            pooled_out = downsample.max_pool_2d(input=conv_out, ds=self.poolsize, ignore_border=True)
+            pooled_out = pool_2d(input=conv_out, ds=self.poolsize, ignore_border=True)
             self.output = pooled_out + self.b.dimshuffle('x', 0, 'x', 'x')
         self.params = [self.W, self.b]
 
@@ -407,11 +408,11 @@ class LeNetConvPoolLayer(object):
         conv_out = conv.conv2d(input=new_data, filters=self.W, filter_shape=self.filter_shape, image_shape=img_shape)
         if self.non_linear=="tanh":
             conv_out_tanh = T.tanh(conv_out + self.b.dimshuffle('x', 0, 'x', 'x'))
-            output = downsample.max_pool_2d(input=conv_out_tanh, ds=self.poolsize, ignore_border=True)
+            output = pool_2d(input=conv_out_tanh, ds=self.poolsize, ignore_border=True)
         if self.non_linear=="relu":
             conv_out_tanh = ReLU(conv_out + self.b.dimshuffle('x', 0, 'x', 'x'))
-            output = downsample.max_pool_2d(input=conv_out_tanh, ds=self.poolsize, ignore_border=True)
+            output = pool_2d(input=conv_out_tanh, ds=self.poolsize, ignore_border=True)
         else:
-            pooled_out = downsample.max_pool_2d(input=conv_out, ds=self.poolsize, ignore_border=True)
+            pooled_out = pool_2d(input=conv_out, ds=self.poolsize, ignore_border=True)
             output = pooled_out + self.b.dimshuffle('x', 0, 'x', 'x')
         return output
